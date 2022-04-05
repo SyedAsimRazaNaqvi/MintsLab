@@ -73,6 +73,7 @@ contract NFTstore is ERC721URIStorage, INFTShop, IERC721Receiver {
 
         Post memory cache = idToPost[tokenId];
 
+        require(cache.price <= msg.value, "Price is low");
         (bool royalityStatus, uint256 royality) = IMintsLab(mintslabFactory).checkRoyality(uint256(cache.ftype));
 
         if (royalityStatus) {
@@ -89,6 +90,7 @@ contract NFTstore is ERC721URIStorage, INFTShop, IERC721Receiver {
         uint256 tokenId
     ) public override {
         require(_isApprovedOrOwner(msg.sender, tokenId), "ERC721: NA");
+        require(idToPost[tokenId].price <= msg.value, "Price is low");
 
         (bool royalityStatus, uint256 royality) = IMintsLab(mintslabFactory).checkRoyality(
             uint256(idToPost[tokenId].ftype)
