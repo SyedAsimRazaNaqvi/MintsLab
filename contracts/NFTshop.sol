@@ -1,21 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.4;
 
-import "hardhat/console.sol";
-// import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-// import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-
-// import "./base/ERC721.sol";
-// import "./base/ERC721Enumerable.sol";
-
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
 import "./interface/INFTShop.sol";
 import "./interface/IMintsLab.sol";
 
-contract NFTstore is ERC721URIStorage, INFTShop {
+contract NFTstore is ERC721URIStorage, INFTShop, IERC721Receiver {
     using Strings for uint256;
     using Counters for Counters.Counter;
     Counters.Counter private _postIds;
@@ -126,5 +121,19 @@ contract NFTstore is ERC721URIStorage, INFTShop {
         (success1, ) = payable(dev).call{ value: share }("");
 
         require(success1);
+    }
+
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes memory
+    ) public virtual override returns (bytes4) {
+        return this.onERC721Received.selector;
+    }
+
+    function sendNFTgift(uint256 tokenId, address claimer) external onlyOwner {
+        require(claimer != address(0) && tokenId > 0, "ZA");
+        IERC721(address(this)).safeTransferFrom(msg.sender, claimer, tokenId);
     }
 }

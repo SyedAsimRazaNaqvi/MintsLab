@@ -5,9 +5,61 @@ import "./interface/IMintsLab.sol";
 import "./NFTshop.sol";
 
 contract MintsLabFactory is IMintsLab {
-    address wallet;
-    address dev;
+    bool royalityStatus;
+    address private wallet;
+    address private immutable dev;
+
     uint256 govShare;
+    uint256 signupFees;
+    uint256 initialRoyality;
+
+    mapping(address => address) public userToShop;
+    mapping(uint256 => uint256) public ftypetoRoyality;
+
+    constructor(
+        address _wallet,
+        address _dev,
+        uint256 _govShare,
+        uint256 _signupFees
+    ) {
+        wallet = _wallet;
+        dev = _dev;
+        govShare = _govShare;
+        signupFees = _signupFees;
+
+        ftypetoRoyality[0] = initialRoyality;
+        ftypetoRoyality[1] = initialRoyality;
+        ftypetoRoyality[2] = initialRoyality;
+        ftypetoRoyality[3] = initialRoyality;
+        ftypetoRoyality[4] = initialRoyality;
+    }
+
+    modifier onlyGovernance() {
+        require(msg.sender == wallet, "NA");
+        _;
+    }
+
+    function changeGovernance(address newGov) external onlyGovernance {
+        wallet = newGov;
+    }
+
+    function updateRoyality(
+        uint256 _ftype,
+        uint256 _royality,
+        bool _royalityStatus
+    ) external onlyGovernance {
+        if (_ftype < 5) {
+            ftypetoRoyality[_ftype] = _royality;
+        } else {
+            signupFees = _royality;
+            royalityStatus = _royalityStatus;
+        }
+    }
+
+    function updateGovernanceShare(uint256 _govSharePercentage, bool _royalityStatus) external onlyGovernance {
+        govShare = _govSharePercentage;
+        royalityStatus = _royalityStatus;
+    }
 
     function governanceDetails()
         external
@@ -22,9 +74,18 @@ contract MintsLabFactory is IMintsLab {
         return (wallet, dev, govShare);
     }
 
-    function checkRoyality(uint256 ftype) external view override returns (bool status, uint256 _ftype) {}
+    function checkRoyality(uint256 ftype) public view override returns (bool, uint256) {
+        return (royalityStatus, ftypetoRoyality[ftype]);
+    }
 
     function createNFTshop(string calldata name, string calldata symbol) external returns (address _shop) {
+        require(userToShop[msg.sender] == address(0), "AE");
+        if (signupFees > 0) {
+            (bool sent, ) = wallet.call{ value: signupFees }("");
+            require(sent, "Failed");
+        }
+
         _shop = address(new NFTstore(name, symbol));
+        userToShop[msg.sender] = _shop;
     }
 }
