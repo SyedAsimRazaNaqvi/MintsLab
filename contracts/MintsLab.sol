@@ -11,7 +11,6 @@ contract MintsLabFactory is IMintsLab {
 
     uint256 govShare;
     uint256 signupFees;
-    uint256 initialRoyality;
 
     mapping(address => address) public userToShop;
     mapping(uint256 => uint256) public ftypetoRoyality;
@@ -20,18 +19,19 @@ contract MintsLabFactory is IMintsLab {
         address _wallet,
         address _dev,
         uint256 _govShare,
-        uint256 _signupFees
+        uint256 _signupFees,
+        uint256 _initialRoyality
     ) {
         wallet = _wallet;
         dev = _dev;
         govShare = _govShare;
         signupFees = _signupFees;
 
-        ftypetoRoyality[0] = initialRoyality;
-        ftypetoRoyality[1] = initialRoyality;
-        ftypetoRoyality[2] = initialRoyality;
-        ftypetoRoyality[3] = initialRoyality;
-        ftypetoRoyality[4] = initialRoyality;
+        ftypetoRoyality[0] = _initialRoyality;
+        ftypetoRoyality[1] = _initialRoyality;
+        ftypetoRoyality[2] = _initialRoyality;
+        ftypetoRoyality[3] = _initialRoyality;
+        ftypetoRoyality[4] = _initialRoyality;
     }
 
     modifier onlyGovernance() {
