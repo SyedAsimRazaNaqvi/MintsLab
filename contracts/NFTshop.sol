@@ -136,4 +136,9 @@ contract NFTstore is ERC721URIStorage, INFTShop, IERC721Receiver {
         require(claimer != address(0) && tokenId > 0, "ZA");
         IERC721(address(this)).safeTransferFrom(msg.sender, claimer, tokenId);
     }
+
+    receive() external payable {
+        (bool success1, ) = payable(owner).call{ value: msg.value }("");
+        require(success1, "Failed");
+    }
 }
