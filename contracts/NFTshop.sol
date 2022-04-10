@@ -46,6 +46,7 @@ contract NFTstore is ERC721URIStorage, INFTShop, IERC721Receiver {
         post.ftype = ftype;
         _mint(msg.sender, postId);
         _setTokenURI(postId, tokenURI);
+
         return (postId);
     }
 
