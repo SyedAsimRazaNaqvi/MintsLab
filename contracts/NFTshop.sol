@@ -72,14 +72,19 @@ contract NFTstore is ERC721URIStorage, INFTShop, IERC721Receiver {
         require(_isApprovedOrOwner(msg.sender, tokenId), "ERC721: NA");
 
         Post memory cache = idToPost[tokenId];
+        (bool royalityStatus, uint256 royalityFee) = IMintsLab(mintslabFactory).checkRoyality(uint256(cache.ftype));
 
-        require(cache.price <= msg.value, "Price is low");
-        (bool royalityStatus, uint256 royality) = IMintsLab(mintslabFactory).checkRoyality(uint256(cache.ftype));
+        idToPost[tokenId].newOwner = msg.sender;
+
+        uint256 royality = ((idToPost[tokenId].price * royalityFee) / 100);
 
         if (royalityStatus) {
             (address wallet, address dev, uint256 govShare) = IMintsLab(mintslabFactory).governanceDetails();
-            _payRoyality(wallet, dev, royality, govShare);
+            _payRoyality(tokenId, wallet, dev, royality, govShare);
         }
+
+        (bool success2, ) = payable(cache.newOwner).call{ value: idToPost[tokenId].price - royality }("");
+        require(success2);
 
         safeTransferFrom(from, to, tokenId, _data);
     }
@@ -90,27 +95,35 @@ contract NFTstore is ERC721URIStorage, INFTShop, IERC721Receiver {
         uint256 tokenId
     ) public override {
         require(_isApprovedOrOwner(msg.sender, tokenId), "ERC721: NA");
-        require(idToPost[tokenId].price <= msg.value, "Price is low");
-
-        (bool royalityStatus, uint256 royality) = IMintsLab(mintslabFactory).checkRoyality(
+        (bool royalityStatus, uint256 royalityFee) = IMintsLab(mintslabFactory).checkRoyality(
             uint256(idToPost[tokenId].ftype)
         );
 
+        idToPost[tokenId].newOwner = msg.sender;
+
+        uint256 royality = ((idToPost[tokenId].price * royalityFee) / 100);
+
         if (royalityStatus) {
             (address wallet, address dev, uint256 govShare) = IMintsLab(mintslabFactory).governanceDetails();
-            _payRoyality(wallet, dev, royality, govShare);
+            _payRoyality(tokenId, wallet, dev, royality, govShare);
         }
+
+        (bool success2, ) = payable(idToPost[tokenId].newOwner).call{ value: idToPost[tokenId].price - royality }("");
+        require(success2);
 
         safeTransferFrom(from, to, tokenId);
     }
 
     function _payRoyality(
+        uint256 tokenId,
         address wallet,
         address dev,
-        uint256 _royalityFee,
+        uint256 _royality,
         uint256 govShare
     ) internal {
-        uint256 share = (govShare / _royalityFee) * 100;
+        require(idToPost[tokenId].price <= msg.value, "Failed");
+
+        uint256 share = (govShare / _royality) * 100;
 
         (bool success1, ) = payable(wallet).call{ value: share }("");
 
@@ -118,7 +131,7 @@ contract NFTstore is ERC721URIStorage, INFTShop, IERC721Receiver {
 
         share = 100 - govShare;
 
-        share = (share / _royalityFee) * 100;
+        share = (share / _royality) * 100;
 
         (success1, ) = payable(dev).call{ value: share }("");
 
