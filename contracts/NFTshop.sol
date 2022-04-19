@@ -13,7 +13,7 @@ import "./interface/IMintsLab.sol";
 contract NFTstore is ERC721URIStorage, INFTShop, IERC721Receiver {
     using Strings for uint256;
     using Counters for Counters.Counter;
-    Counters.Counter private _postIds;
+    Counters.Counter private _tokenIds;
 
     address owner;
     address mintslabFactory;
@@ -30,15 +30,19 @@ contract NFTstore is ERC721URIStorage, INFTShop, IERC721Receiver {
         _;
     }
 
-    constructor(string memory name, string memory symbol) ERC721(name, symbol) {}
+    constructor(string memory name, string memory symbol) ERC721(name, symbol) {
+        _tokenIds.increment();
+        uint256 profileId = _tokenIds.current();
+        _mint(msg.sender, profileId);
+    }
 
     function createPost(
         uint256 price,
         fileType ftype,
         string memory tokenURI
     ) external override onlyOwner returns (uint256) {
-        _postIds.increment();
-        uint256 postId = _postIds.current();
+        _tokenIds.increment();
+        uint256 postId = _tokenIds.current();
         Post storage post = idToPost[postId];
         post.postId = postId;
         post.price = price;
@@ -51,13 +55,16 @@ contract NFTstore is ERC721URIStorage, INFTShop, IERC721Receiver {
     }
 
     function updatePost(
-        uint256 _postId,
+        uint256 _tokenId,
         uint256 price,
         string memory tokenURI
-    ) external newOwner(_postId) {
-        Post storage post = idToPost[_postId];
-        post.price = price;
-        _setTokenURI(_postId, tokenURI);
+    ) external newOwner(_tokenId) {
+        if (_tokenId != 1) {
+            Post storage post = idToPost[_tokenId];
+            post.price = price;
+        }
+
+        _setTokenURI(_tokenId, tokenURI);
     }
 
     function updateOwner(address _newOwner) external onlyOwner {
